@@ -1,0 +1,676 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model JudgeProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  city      String? // Город судьи
+  category  String? // Категория судьи (ВК, IК, ЗК и т.д.)
+  position  String? // Должность судьи (постоянная)
+  regionId  String?  @map("region_id") // Связь с регионом
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Связь с User (двусторонняя)
+  user   User    @relation("JudgeProfile", fields: [userId], references: [id], onDelete: Cascade)
+  // Связь с Region (двусторонняя)
+  region Region? @relation("JudgeRegion", fields: [regionId], references: [id])
+
+  @@map("judge_profiles")
+}
+
+model User {
+  id                          String                      @id @default(uuid())
+  email                       String                      @unique
+  passwordHash                String                      @map("password_hash")
+  role                        UserRole                    @default(GUEST)
+  isActive                    Boolean                     @default(true) @map("is_active")
+  createdAt                   DateTime                    @default(now()) @map("created_at")
+  updatedAt                   DateTime                    @updatedAt @map("updated_at")
+  educationalOrganizationId   String?                     @map("educational_organization_id")
+  athleteRegistrationRequests AthleteRegistrationRequest? @relation("AthleteRegistrationRequests")
+  athlete                     Athlete?
+  coach                       Coach?
+  moderator                   Moderator?
+  competitionJudges           CompetitionJudge[]          @relation("CompetitionJudges")
+  invitations                 Invitation[]                @relation("CreatedInvitations")
+  news                        News[]
+  notifications               Notification[]              @relation("SenderNotifications")
+  tickets                     Ticket[]
+  profile                     UserProfile?
+  educationalOrganization     EducationalOrganization?    @relation("JudgeOrganization", fields: [educationalOrganizationId], references: [id])
+
+  // Новая связь с JudgeProfile (двусторонняя)
+  judgeProfile JudgeProfile? @relation("JudgeProfile")
+
+  @@map("users")
+}
+
+model UserProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique @map("user_id")
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  middleName String?  @map("middle_name")
+  phone      String?
+  avatarUrl  String?  @map("avatar_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  role      UserRole
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  teamId    String?  @map("team_id")
+  creator   User     @relation("CreatedInvitations", fields: [createdBy], references: [id])
+  team      Team?    @relation(fields: [teamId], references: [id])
+
+  @@map("invitations")
+}
+
+model AthleteRegistrationRequest {
+  id               String          @id @default(uuid())
+  userId           String          @unique @map("user_id")
+  coachId          String          @map("coach_id")
+  birthDate        DateTime        @map("birth_date")
+  gender           Gender
+  status           RequestStatus   @default(PENDING)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  weight           Float?
+  weightCategoryId String?         @map("weight_category_id")
+  sportsRankId     String?         @map("sports_rank_id")
+  coach            Coach           @relation("AthleteRegistrationRequests", fields: [coachId], references: [id])
+  sportsRank       SportsRank?     @relation(fields: [sportsRankId], references: [id])
+  user             User            @relation("AthleteRegistrationRequests", fields: [userId], references: [id], onDelete: Cascade)
+  weightCategory   WeightCategory? @relation(fields: [weightCategoryId], references: [id])
+
+  @@map("athlete_registration_requests")
+}
+
+model FederalDistrict {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  regions     Region[]
+
+  @@map("federal_districts")
+}
+
+model Region {
+  id                String          @id @default(uuid())
+  federalDistrictId String          @map("federal_district_id")
+  name              String
+  code              String          @unique
+  createdAt         DateTime        @default(now()) @map("created_at")
+  federalDistrict   FederalDistrict @relation(fields: [federalDistrictId], references: [id])
+  teams             Team[]
+  // Добавляем обратную связь для судей
+  judgeProfiles     JudgeProfile[]  @relation("JudgeRegion")
+
+  @@map("regions")
+}
+
+model Sport {
+  id               String           @id @default(uuid())
+  name             String
+  description      String?
+  rules            String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+  competitions     Competition[]
+  weightCategories WeightCategory[]
+
+  @@map("sports")
+}
+
+model WeightCategory {
+  id                          String                       @id @default(uuid())
+  sportId                     String                       @map("sport_id")
+  name                        String
+  minWeight                   Float?                       @map("min_weight")
+  maxWeight                   Float?                       @map("max_weight")
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  athleteRegistrationRequests AthleteRegistrationRequest[]
+  athletes                    Athlete[]
+  brackets                    Bracket[]
+  sport                       Sport                        @relation(fields: [sportId], references: [id])
+
+  @@map("weight_categories")
+}
+
+model SportsRank {
+  id                          String                       @id @default(uuid())
+  name                        String                       @unique
+  description                 String?
+  order                       Int                          @default(0)
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  updatedAt                   DateTime                     @updatedAt @map("updated_at")
+  athleteRegistrationRequests AthleteRegistrationRequest[]
+  athletes                    Athlete[]
+
+  @@map("sports_ranks")
+}
+
+model EducationalOrganization {
+  id          String    @id @default(uuid())
+  name        String
+  shortName   String?   @map("short_name")
+  address     String?
+  contactInfo String?   @map("contact_info")
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  athletes    Athlete[]
+  coaches     Coach[]
+  judges      User[]    @relation("JudgeOrganization")
+
+  @@map("educational_organizations")
+}
+
+model Team {
+  id               String            @id @default(uuid())
+  name             String
+  regionId         String            @map("region_id")
+  address          String?
+  contactInfo      String?           @map("contact_info")
+  description      String?
+  logoUrl          String?           @map("logo_url")
+  status           TeamStatus        @default(PENDING)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  applications     Application[]
+  athletes         Athlete[]
+  coaches          Coach[]
+  invitations      Invitation[]
+  teamParticipants TeamParticipant[]
+  matchesAsTeam1   Match[]           @relation("Team1Matches")
+  matchesAsTeam2   Match[]           @relation("Team2Matches")
+  region           Region            @relation(fields: [regionId], references: [id])
+
+  @@map("teams")
+}
+
+model Coach {
+  id                          String                       @id @default(uuid())
+  userId                      String                       @unique @map("user_id")
+  teamId                      String                       @map("team_id")
+  qualification               String?
+  experience                  String?
+  createdAt                   DateTime                     @default(now()) @map("created_at")
+  educationalOrganizationId   String?                      @map("educational_organization_id")
+  athleteRegistrationRequests AthleteRegistrationRequest[] @relation("AthleteRegistrationRequests")
+  athletes                    Athlete[]
+  educationalOrganization     EducationalOrganization?     @relation(fields: [educationalOrganizationId], references: [id])
+  team                        Team                         @relation(fields: [teamId], references: [id])
+  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competitions                CompetitionCoach[]
+
+  @@map("coaches")
+}
+
+model Moderator {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  description String?  @db.Text
+  allowedTabs Json     @default("[]") @map("allowed_tabs")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("moderators")
+}
+
+model Athlete {
+  id                        String                   @id @default(uuid())
+  userId                    String                   @unique @map("user_id")
+  teamId                    String                   @map("team_id")
+  coachId                   String?                  @map("coach_id")
+  birthDate                 DateTime                 @map("birth_date")
+  gender                    Gender
+  rank                      String?
+  priority                  Int?
+  bestResults               String?                  @map("best_results")
+  weightCategoryId          String?                  @map("weight_category_id")
+  createdAt                 DateTime                 @default(now()) @map("created_at")
+  updatedAt                 DateTime                 @updatedAt @map("updated_at")
+  educationalOrganizationId String?                  @map("educational_organization_id")
+  weight                    Float?
+  sportsRankId              String?                  @map("sports_rank_id")
+  coach                     Coach?                   @relation(fields: [coachId], references: [id])
+  educationalOrganization   EducationalOrganization? @relation(fields: [educationalOrganizationId], references: [id])
+  sportsRank                SportsRank?              @relation(fields: [sportsRankId], references: [id])
+  team                      Team                     @relation(fields: [teamId], references: [id])
+  user                      User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weightCategory            WeightCategory?          @relation(fields: [weightCategoryId], references: [id])
+  participants              CompetitionParticipant[]
+  disqualifications         Disqualification[]
+  matchesAsAthlete1         Match[]                  @relation("Athlete1Matches")
+  matchesAsAthlete2         Match[]                  @relation("Athlete2Matches")
+  results                   Result[]
+
+  @@map("athletes")
+}
+
+model Competition {
+  id                String                   @id @default(uuid())
+  name              String
+  sportId           String                   @map("sport_id")
+  competitionType   CompetitionType          @default(INDIVIDUAL) @map("competition_type")
+  startDate         DateTime                 @map("start_date")
+  endDate           DateTime                 @map("end_date")
+  location          String?
+  description       String?
+  organizerInfo     String?                  @map("organizer_info")
+  status            CompetitionStatus        @default(UPCOMING)
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  iconUrl           String?                  @map("icon_url")
+  applications      Application[]
+  brackets          Bracket[]
+  coaches           CompetitionCoach[]
+  judges            CompetitionJudge[]
+  participants      CompetitionParticipant[]
+  teamParticipants  TeamParticipant[]
+  sport             Sport                    @relation(fields: [sportId], references: [id])
+  disqualifications Disqualification[]
+  events            CompetitionEvent[]
+  liveStreams       LiveStream[]
+
+  @@map("competitions")
+}
+
+model CompetitionParticipant {
+  id               String            @id @default(uuid())
+  competitionId    String            @map("competition_id")
+  athleteId        String            @map("athlete_id")
+  status           ParticipantStatus @default(REGISTERED)
+  registrationDate DateTime          @default(now()) @map("registration_date")
+  athlete          Athlete           @relation(fields: [athleteId], references: [id])
+  competition      Competition       @relation(fields: [competitionId], references: [id])
+
+  @@unique([competitionId, athleteId])
+  @@map("competition_participants")
+}
+
+model TeamParticipant {
+  id               String            @id @default(uuid())
+  competitionId    String            @map("competition_id")
+  teamId           String            @map("team_id")
+  status           ParticipantStatus @default(REGISTERED)
+  registrationDate DateTime          @default(now()) @map("registration_date")
+  team             Team              @relation(fields: [teamId], references: [id])
+  competition      Competition       @relation(fields: [competitionId], references: [id])
+
+  @@unique([competitionId, teamId])
+  @@map("team_participants")
+}
+
+model Bracket {
+  id               String          @id @default(uuid())
+  competitionId    String          @map("competition_id")
+  weightCategoryId String?         @map("weight_category_id")
+  type             BracketType
+  data             Json
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  competition      Competition     @relation(fields: [competitionId], references: [id])
+  weightCategory   WeightCategory? @relation(fields: [weightCategoryId], references: [id])
+  matches          Match[]
+
+  @@map("brackets")
+}
+
+model Match {
+  id            String      @id @default(uuid())
+  bracketId     String      @map("bracket_id")
+  round         Int
+  position      Int
+  athlete1Id    String?     @map("athlete1_id")
+  athlete2Id    String?     @map("athlete2_id")
+  team1Id       String?     @map("team1_id")
+  team2Id       String?     @map("team2_id")
+  winnerId      String?     @map("winner_id")
+  winnerTeamId  String?     @map("winner_team_id")
+  score         Json?
+  metadata      Json?
+  status        MatchStatus @default(SCHEDULED)
+  scheduledTime DateTime?   @map("scheduled_time")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  athlete1      Athlete?    @relation("Athlete1Matches", fields: [athlete1Id], references: [id])
+  athlete2      Athlete?    @relation("Athlete2Matches", fields: [athlete2Id], references: [id])
+  team1         Team?       @relation("Team1Matches", fields: [team1Id], references: [id])
+  team2         Team?       @relation("Team2Matches", fields: [team2Id], references: [id])
+  bracket       Bracket     @relation(fields: [bracketId], references: [id])
+  results       Result[]
+
+  @@map("matches")
+}
+
+model Result {
+  id        String   @id @default(uuid())
+  matchId   String   @map("match_id")
+  athleteId String   @map("athlete_id")
+  points    Int?
+  time      String?
+  position  Int?
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  athlete   Athlete  @relation(fields: [athleteId], references: [id])
+  match     Match    @relation(fields: [matchId], references: [id])
+
+  @@map("results")
+}
+
+model Disqualification {
+  id            String      @id @default(uuid())
+  athleteId     String      @map("athlete_id")
+  competitionId String      @map("competition_id")
+  reason        String
+  startDate     DateTime    @map("start_date")
+  endDate       DateTime?   @map("end_date")
+  judgeId       String?     @map("judge_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  athlete       Athlete     @relation(fields: [athleteId], references: [id])
+  competition   Competition @relation(fields: [competitionId], references: [id])
+
+  @@map("disqualifications")
+}
+
+model CompetitionJudge {
+  id            String      @id @default(uuid())
+  competitionId String      @map("competition_id")
+  userId        String      @map("user_id")
+  role          String?     // Должность на соревновании (Главный судья, Главный секретарь, Рефери и т.д.)
+  category      String?     // Категория судьи (ВК, IК, ЗК) - дублируем для гибкости
+  createdAt     DateTime    @default(now()) @map("created_at")
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  user          User        @relation("CompetitionJudges", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, userId])
+  @@map("competition_judges")
+}
+
+model CompetitionCoach {
+  id            String      @id @default(uuid())
+  competitionId String      @map("competition_id")
+  coachId       String      @map("coach_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  coach         Coach       @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, coachId])
+  @@map("competition_coaches")
+}
+
+model CompetitionEvent {
+  id            String      @id @default(uuid())
+  competitionId String      @map("competition_id")
+  title         String
+  description   String?
+  startTime     DateTime    @map("start_time")
+  endTime       DateTime?   @map("end_time")
+  location      String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@map("competition_events")
+}
+
+model News {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  authorId    String   @map("author_id")
+  category    String?
+  images      Json?
+  attachments Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  author      User     @relation(fields: [authorId], references: [id])
+
+  @@map("news")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  title         String
+  message       String
+  senderId      String   @map("sender_id")
+  recipientType String   @map("recipient_type")
+  recipientId   String?  @map("recipient_id")
+  sentAt        DateTime @default(now()) @map("sent_at")
+  read          Boolean  @default(false)
+  sender        User     @relation("SenderNotifications", fields: [senderId], references: [id])
+
+  @@map("notifications")
+}
+
+model Application {
+  id            String            @id @default(uuid())
+  teamId        String            @map("team_id")
+  competitionId String            @map("competition_id")
+  status        ApplicationStatus @default(PENDING)
+  submittedAt   DateTime          @default(now()) @map("submitted_at")
+  processedBy   String?           @map("processed_by")
+  processedAt   DateTime?         @map("processed_at")
+  competition   Competition       @relation(fields: [competitionId], references: [id])
+  team          Team              @relation(fields: [teamId], references: [id])
+
+  @@map("applications")
+}
+
+model Ticket {
+  id        String       @id @default(uuid())
+  userId    String       @map("user_id")
+  subject   String
+  message   String
+  category  String?
+  status    TicketStatus @default(OPEN)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  user      User         @relation(fields: [userId], references: [id])
+
+  @@map("tickets")
+}
+
+model Subscription {
+  id             String             @id @default(uuid())
+  organizationId String             @map("organization_id")
+  tariffPlan     String             @map("tariff_plan")
+  startDate      DateTime           @default(now()) @map("start_date")
+  endDate        DateTime           @map("end_date")
+  status         SubscriptionStatus @default(ACTIVE)
+  createdAt      DateTime           @default(now()) @map("created_at")
+
+  @@map("subscriptions")
+}
+
+enum UserRole {
+  ADMIN
+  JUDGE
+  COACH
+  ATHLETE
+  MODERATOR
+  GUEST
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TeamStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  REGISTRATION
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  REGISTERED
+  CONFIRMED
+  DISQUALIFIED
+  WITHDRAWN
+}
+
+enum BracketType {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum CompetitionType {
+  INDIVIDUAL
+  TEAM
+}
+
+model LiveStream {
+  id            String       @id @default(uuid())
+  title         String
+  description   String?
+  rutubeUrl     String       @map("rutube_url")
+  competitionId String?      @map("competition_id")
+  isActive      Boolean      @default(false) @map("is_active")
+  scheduledTime DateTime?    @map("scheduled_time")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  competition   Competition? @relation(fields: [competitionId], references: [id])
+
+  @@map("live_streams")
+}
+
+model OrganizationSettings {
+  id          String   @id @default(uuid())
+  name        String // Название организации
+  description String? // Описание организации
+  content     String? // Основной текст о организации (HTML или Markdown)
+  logoUrl     String?  @map("logo_url") // URL логотипа организации
+  images      String[] // Массив URL фотографий организации
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("organization_settings")
+}
+
+model Backup {
+  id          String   @id @default(uuid())
+  filename    String // Имя файла бэкапа
+  filePath    String   @map("file_path") // Путь к файлу на сервере
+  fileSize    Int      @map("file_size") // Размер файла в байтах
+  format      String // Формат: 'json' или 'csv'
+  type        String // Тип: 'manual' (ручной) или 'scheduled' (автоматический)
+  createdAt   DateTime @default(now()) @map("created_at")
+  description String? // Описание бэкапа
+
+  @@map("backups")
+}
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id") // ID пользователя, который выполнил действие
+  userEmail   String?  @map("user_email") // Email пользователя
+  userName    String?  @map("user_name") // ФИО пользователя
+  action      String // Действие: 'CREATE', 'UPDATE', 'DELETE'
+  entityType  String   @map("entity_type") // Тип сущности: 'User', 'Team', 'Competition', etc.
+  entityId    String?  @map("entity_id") // ID измененной сущности
+  entityName  String?  @map("entity_name") // Название измененной сущности (для удобства)
+  changes     Json? // JSON с изменениями (старые и новые значения)
+  description String? // Описание действия
+  ipAddress   String?  @map("ip_address") // IP адрес пользователя
+  userAgent   String?  @map("user_agent") // User Agent браузера
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("system_logs")
+}
+
+model DocumentCategory {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  order       Int        @default(0) @map("order")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  documents   Document[]
+
+  @@map("document_categories")
+}
+
+model Document {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  fileUrl     String           @map("file_url")
+  fileName    String           @map("file_name")
+  fileSize    Int              @map("file_size")
+  mimeType    String?          @map("mime_type")
+  categoryId  String           @map("category_id")
+  order       Int              @default(0) @map("order")
+  isPublic    Boolean          @default(true) @map("is_public")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  category    DocumentCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}

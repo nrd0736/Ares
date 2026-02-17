@@ -1,0 +1,94 @@
+/* Стили для узлов React Flow */
+.athlete-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  min-width: 180px;
+  min-height: 60px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.athlete-node:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.athlete-node.winner {
+  border: 2px solid #1890ff;
+  background: #e6f7ff;
+}
+
+.athlete-node.final-winner {
+  border: 2px solid #52c41a;
+  background: #f6ffed;
+  font-weight: bold;
+  min-width: 200px;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.athlete-node-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #f0f0f0;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.athlete-node-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.athlete-node-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.athlete-node-region {
+  font-size: 11px;
+  color: #8c8c8c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Стили для React Flow */
+.react-flow {
+  background: #fafafa;
+}
+
+.react-flow__node {
+  font-family: Arial, sans-serif;
+}
+
+.react-flow__edge-path {
+  stroke: #000;
+  stroke-width: 2;
+}
+
+.react-flow__controls {
+  button {
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    
+    &:hover {
+      background: #f0f0f0;
+    }
+  }
+}
+
