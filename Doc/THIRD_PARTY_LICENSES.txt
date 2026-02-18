@@ -1,0 +1,87 @@
+================================================================================
+THIRD-PARTY LICENSES — Technologies and Libraries Used in APEC / ARES Platform
+================================================================================
+This file lists the main technologies and libraries used in the project and
+their licenses. Full license texts can be found in the respective packages
+(e.g. node_modules/<package>/LICENSE or on the project's official repository).
+
+--------------------------------------------------------------------------------
+RUNTIME & CORE
+--------------------------------------------------------------------------------
+- Node.js          — MIT License (https://nodejs.org/)
+- npm              — Artistic-2.0 (https://www.npmjs.com/)
+- TypeScript       — Apache-2.0 (https://www.typescriptlang.org/)
+- PostgreSQL       — PostgreSQL License (https://www.postgresql.org/about/licence/)
+
+--------------------------------------------------------------------------------
+BACKEND (ares-backend)
+--------------------------------------------------------------------------------
+- Express          — MIT
+- Prisma           — Apache-2.0
+- @prisma/client   — Apache-2.0
+- bcrypt           — MIT
+- jsonwebtoken      — MIT
+- cors              — MIT
+- helmet            — MIT
+- compression      — MIT
+- dotenv            — BSD-2-Clause
+- morgan            — MIT
+- multer            — MIT
+- express-rate-limit — MIT
+- winston           — MIT
+- winston-daily-rotate-file — MIT
+- zod               — MIT
+- uuid              — MIT
+- axios             — MIT
+- nodemailer        — MIT
+- socket.io         — MIT
+- node-cron         — ISC
+- chalk             — MIT
+- dompurify         — DOM Purify License (Apache-2.0 or MPL-2.0)
+- file-type         — MIT
+- jspdf             — MIT
+- docx              — MIT
+- qrcode            — MIT
+- d3                — BSD-3-Clause
+- mermaid           — MIT
+- puppeteer         — Apache-2.0
+- dayjs             — MIT
+- date-fns          — MIT
+- systeminformation — MIT
+
+--------------------------------------------------------------------------------
+FRONTEND (ares-frontend)
+--------------------------------------------------------------------------------
+- React            — MIT
+- React DOM        — MIT
+- React Router DOM — MIT
+- Vite             — MIT
+- Ant Design (antd) — MIT
+- Redux Toolkit    — MIT
+- React Redux      — MIT
+- Axios            — MIT
+- socket.io-client — MIT
+- Chart.js         — MIT
+- react-chartjs-2  — MIT
+- dayjs            — MIT
+- react-hook-form  — MIT
+- Zustand          — MIT
+- Tailwind CSS     — MIT
+- jspdf            — MIT
+- html2canvas      — MIT
+- xlsx             — Apache-2.0 / CUSTOM
+- qrcode.react     — MIT
+- Three.js         — MIT
+- @react-three/fiber — MIT
+- @react-three/drei — MIT
+- ReactFlow        — MIT
+
+--------------------------------------------------------------------------------
+ROOT WORKSPACE
+--------------------------------------------------------------------------------
+- Prisma           — Apache-2.0
+- concurrently     — MIT
+- qs               — BSD-3-Clause
+- baseline-browser-mapping — MIT
+
+================================================================================
