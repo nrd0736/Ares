@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../Doc/img/Logo.png" alt="APEC" width="120" />
+  <img src="Doc/img/Logo.png" alt="APEC" width="120" />
 </p>
 
 # APEC
